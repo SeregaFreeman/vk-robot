@@ -7,7 +7,6 @@ from time import sleep
 
 def captcha_handler(captcha):
 
-    # key = ' '
     url = captcha.get_url()
     cpt.captcha_save(url)
     key = input("Enter Captcha {0}: ".format(url)).strip()
@@ -47,7 +46,7 @@ def like_last_post(owner_id):
             print('Нет записей у юзера {}'.format(owner_id))
     except:
         print('Юзер удалён', owner_id)
-        sleep(20)
+        sleep(15)
 
 shuffle(friends)
 
