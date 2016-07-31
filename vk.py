@@ -2,12 +2,15 @@ import vk_api
 from  random import shuffle
 from multiprocessing.dummy import Pool as ThreadPool
 import multiprocessing as mp
+import cpt
 from time import sleep
 
 def captcha_handler(captcha):
 
-    key = ' '
-    # key = input("Enter Captcha {0}: ".format(captcha.get_url())).strip()
+    # key = ' '
+    url = captcha.get_url()
+    cpt.captcha_save(url)
+    key = input("Enter Captcha {0}: ".format(url)).strip()
     print(key)
 
     return captcha.try_again(key)
@@ -37,20 +40,21 @@ def like_last_post(owner_id):
         post = vk.wall.get(owner_id=owner_id, count=1)['items']
         if post:
             post_id = post[0]['id']
-            vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
-            print('Поставил лайк юсеру {}'.format(owner_id))
+            if not vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
+                vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
+                print('Поставил лайк юзеру {}'.format(owner_id))
         else:
-            pass
-            print('Нет записей у юсера {}'.format(owner_id))
+            print('Нет записей у юзера {}'.format(owner_id))
     except:
-        print('Капча или юхер удалён', owner_id)
-        sleep(60)
+        print('Юзер удалён', owner_id)
+        sleep(20)
 
 shuffle(friends)
 
-pool = ThreadPool(mp.cpu_count())
-pool.map(like_last_post, friends)
-pool.close()
-pool.join()
+# pool = ThreadPool(mp.cpu_count())
+# pool.map(like_last_post, friends)
+# pool.close()
+# pool.join()
 
-
+for i in friends:
+    like_last_post(i)
