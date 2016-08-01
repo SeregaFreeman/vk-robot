@@ -78,7 +78,7 @@ while True:
     except IndexError:
         continue
     if person['id'] not in people_in_db:
-        print(person['id'].encode('utf-8'), end='|', file=db)
+        print(str(person['id']).encode('utf-8'), end='|', file=db)
         vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
         print(u'Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']).encode('utf-8'), file=log)
         break
