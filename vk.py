@@ -31,12 +31,12 @@ def captcha_handler(captcha):
     # key = input("Enter Captcha {0}: ".format(url)).strip()
 
     ask_for_help = choice(['Взломайте каптчу, плиз', 'Тут это... ваша помощь нужна', 'Взломайте, только побыстрее',
-                           'Докажи, что ты лучше китайцев', 'А это смогёшь взломать?', 'Коооооооооть', 'Ну пазязя',
+                           'Докажите, что вы лучше китайцев', 'А это смогёшь взломать?', 'Коооооооооть', 'Ну пазязя',
                            'Без тебя никак не обойтись', 'Купи слона',
                            'Эй, ребят, хватит трахаться, помогите взломать каптчу', 'Потом ипацца будите! Долг зовет!'])
 
-    vk.messages.send(chat_id=4, message=ask_for_help)
-    vk.messages.send(chat_id=4, message=url.replace('api.', ''))
+    vk.messages.send(chat_id=13, message=ask_for_help)
+    vk.messages.send(chat_id=13, message=url.replace('api.', ''))
     last_message_id = vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
     print('        Отправил сообщенько', file=log)
 
@@ -47,7 +47,7 @@ def captcha_handler(captcha):
     while True:
         message = vk.messages.get(count=1, bool=0, offset=0)['items'][0]
         if message['id'] != last_message_id:
-            vk.messages.send(chat_id=4, message=answer)
+            vk.messages.send(chat_id=13, message=answer)
             break
         else:
             sleep(10)
@@ -74,7 +74,7 @@ while True:
     person = persons['items'][randint(0, count)]
     if person['id'] not in people_in_db:
         print(person['id'], end='|', file=db)
-        vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
+        vk.messages.send(chat_id=13, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
         print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=log)
         break
 
@@ -101,7 +101,7 @@ pool.close()
 pool.join()
 
 def photo_for_log(owner_id, photo_id):
-    photo = vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id)[0])[0]
+    photo = vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id))[0]
     max_sixe = max([int(i[6:]) for i in photo if 'photo_' in i])
     return photo['photo_{}'.format(max_sixe)]
 
@@ -124,7 +124,7 @@ def like_all_photos(owner_id, photo_id):
     if not vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
         vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
         print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
-                                                           photo_for_log(owner_id, photo_id)))
+                                                           photo_for_log(owner_id, photo_id)), file=log)
 
 
 shuffle(friends)
@@ -134,20 +134,20 @@ shuffle(friends)
 # pool.close()
 # pool.join()
 
-vk.messages.send(chat_id=4, message='Начал лайкать фотки')
+vk.messages.send(chat_id=13, message='Начал лайкать фотки')
 print('    Начал лайкать фотки', file=log)
 
 for i in person_photos_ids:
     like_all_photos(person['id'], i)
 
-vk.messages.send(chat_id=4, message='Начал лайкать посты')
+vk.messages.send(chat_id=13, message='Начал лайкать посты')
 print('    Начал лайкать посты', file=log)
 
 for i in friends + [person['id']]:
     like_last_post(i)
 
 
-vk.messages.send(chat_id=4, message='Затраллено')
+vk.messages.send(chat_id=13, message='Затраллено')
 print('Затраллено', file=log)
 
 db.close()
