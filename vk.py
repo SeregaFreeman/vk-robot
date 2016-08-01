@@ -25,7 +25,7 @@ people_in_db = tmp.rsplit('|')
 
 def captcha_handler(captcha):
 
-    print('        Словил каптчу', file=log)
+    print('         Словил каптчу', file=log)
     url = captcha.get_url()
     cpt.captcha_save(url)
     # key = input("Enter Captcha {0}: ".format(url)).strip()
@@ -35,10 +35,10 @@ def captcha_handler(captcha):
                            'Без тебя никак не обойтись', 'Купи слона',
                            'Эй, ребят, хватит трахаться, помогите взломать каптчу', 'Потом ипацца будите! Долг зовет!'])
 
-    vk.messages.send(chat_id=13, message=ask_for_help)
-    vk.messages.send(chat_id=13, message=url.replace('api.', ''))
+    vk.messages.send(chat_id=4, message=ask_for_help)
+    vk.messages.send(chat_id=4, message=url.replace('api.', ''))
     last_message_id = vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
-    print('        Отправил сообщенько', file=log)
+    print('         Отправил сообщенько', file=log)
 
     answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
                      'Почему так долго? Лучше бы у китайцев попросил!', 'Не дано тебе разгадывать каптчи',
@@ -47,7 +47,7 @@ def captcha_handler(captcha):
     while True:
         message = vk.messages.get(count=1, bool=0, offset=0)['items'][0]
         if message['id'] != last_message_id:
-            vk.messages.send(chat_id=13, message=answer)
+            vk.messages.send(chat_id=4, message=answer)
             break
         else:
             sleep(10)
@@ -74,7 +74,7 @@ while True:
     person = persons['items'][randint(0, count)]
     if person['id'] not in people_in_db:
         print(person['id'], end='|', file=db)
-        vk.messages.send(chat_id=13, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
+        vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
         print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=log)
         break
 
@@ -134,20 +134,20 @@ shuffle(friends)
 # pool.close()
 # pool.join()
 
-vk.messages.send(chat_id=13, message='Начал лайкать фотки')
+vk.messages.send(chat_id=4, message='Начал лайкать фотки')
 print('    Начал лайкать фотки', file=log)
 
 for i in person_photos_ids:
     like_all_photos(person['id'], i)
 
-vk.messages.send(chat_id=13, message='Начал лайкать посты')
+vk.messages.send(chat_id=4, message='Начал лайкать посты')
 print('    Начал лайкать посты', file=log)
 
 for i in friends + [person['id']]:
     like_last_post(i)
 
 
-vk.messages.send(chat_id=13, message='Затраллено')
+vk.messages.send(chat_id=4, message='Затраллено')
 print('Затраллено', file=log)
 
 db.close()
