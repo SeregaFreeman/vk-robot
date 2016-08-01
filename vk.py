@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import vk_api
 from random import shuffle, choice, randint
 from multiprocessing.dummy import Pool as ThreadPool
@@ -25,7 +27,7 @@ people_in_db = tmp.rsplit('|')
 
 def captcha_handler(captcha):
 
-    print('         Словил каптчу', file=log)
+    print(u'         Словил каптчу'.encode('utf-8'), file=log)
     url = captcha.get_url()
     cpt.captcha_save(url)
     # key = input("Enter Captcha {0}: ".format(url)).strip()
@@ -38,7 +40,7 @@ def captcha_handler(captcha):
     vk.messages.send(chat_id=4, message=ask_for_help)
     vk.messages.send(chat_id=4, message=url.replace('api.', ''))
     last_message_id = vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
-    print('         Отправил сообщенько', file=log)
+    print(u'         Отправил сообщенько'.encode('utf-8'), file=log)
 
     answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
                      'Почему так долго? Лучше бы у китайцев попросил!', 'Не дано тебе разгадывать каптчи',
@@ -53,7 +55,7 @@ def captcha_handler(captcha):
             sleep(10)
 
     key = message['body']
-    print('         Получил такой ключ: {}'.format(key), file=log)
+    print(u'         Получил такой ключ: {}'.format(key).encode('utf-8'), file=log)
     return captcha.try_again(key)
 
 
@@ -70,12 +72,15 @@ vk = vk_session.get_api()
 while True:
     persons = vk.users.search(count=1000, country=3, city=282, sex=1, status=6, age_from=18, age_to=25,
                              online=1, has_photo=1)
-    count = persons['count'] - 1
-    person = persons['items'][randint(0, count)]
+    try:
+        count = persons['count'] - 1
+        person = persons['items'][randint(0, count)]
+    except IndexError:
+        continue
     if person['id'] not in people_in_db:
-        print(person['id'], end='|', file=db)
+        print(person['id'].encode('utf-8'), end='|', file=db)
         vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
-        print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=log)
+        print(u'Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']).encode('utf-8'), file=log)
         break
 
 with vk_api.VkRequestsPool(vk_session) as pool:
@@ -83,7 +88,7 @@ with vk_api.VkRequestsPool(vk_session) as pool:
     person_friends = pool.method_one_param('friends.get', key='user_id', values=[person['id']])
 
 friends = list(set().union(*(i['items'] for i in person_friends.values())))
-print('    Количество друганов: {}'.format(len(friends)), file=log)
+print(u'    Количество друганов: {}'.format(len(friends)).encode('utf-8'), file=log)
 
 with vk_api.VkRequestsPool(vk_session) as pool:
     # noinspection PyUnboundLocalVariable
@@ -93,7 +98,7 @@ with vk_api.VkRequestsPool(vk_session) as pool:
 
 person_photos = person_photos['items']
 
-print('    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)), file=log)
+print(u'    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)).encode('utf-8'), file=log)
 
 pool = ThreadPool(mp.cpu_count())
 person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
@@ -114,17 +119,17 @@ def like_last_post(owner_id):
             post_id = post[0]['id']
             if not vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
                 vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
-                print('        Поставил лайк юзеру {}'.format(owner_id), file=log)
+                print(u'        Поставил лайк юзеру {}'.format(owner_id).encode('utf-8'), file=log)
         else:
-            print('        Нет записей у юзера {}'.format(owner_id), file=log)
+            print(u'        Нет записей у юзера {}'.format(owner_id).encode('utf-8'), file=log)
     except:
-        print('        Юзер удалён', owner_id, file=log)
+        print(u'        Юзер удалён'.encode('utf-8'), owner_id, file=log)
 
 def like_all_photos(owner_id, photo_id):
     if not vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
         vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
-        print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
-                                                           photo_for_log(owner_id, photo_id)), file=log)
+        print(u'        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
+                                                           photo_for_log(owner_id, photo_id)).encode('utf-8'), file=log)
 
 
 shuffle(friends)
@@ -135,20 +140,20 @@ shuffle(friends)
 # pool.join()
 
 vk.messages.send(chat_id=4, message='Начал лайкать фотки')
-print('    Начал лайкать фотки', file=log)
+print(u'    Начал лайкать фотки'.encode('utf-8'), file=log)
 
 for i in person_photos_ids:
     like_all_photos(person['id'], i)
 
 vk.messages.send(chat_id=4, message='Начал лайкать посты')
-print('    Начал лайкать посты', file=log)
+print(u'    Начал лайкать посты'.encode('utf-8'), file=log)
 
 for i in friends + [person['id']]:
     like_last_post(i)
 
 
 vk.messages.send(chat_id=4, message='Затраллено')
-print('Затраллено', file=log)
+print(u'Затраллено'.encode('utf-8'), file=log)
 
 db.close()
 log.close()
