@@ -87,7 +87,7 @@ class JsonStatham(unittest.TestCase):
 
         self.vk.messages.send(chat_id=4, message=ask_for_help)
         self.vk.messages.send(chat_id=4, message=url.replace('api.', ''))
-        last_message_id = self.vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
+        last_message_id = self.vk.messages.getHistory(count=1, offset=0, peer_id=2000000004)['items'][0]['id']
         # print('         Отправил сообщенько', file=self.log)
         logger.debug('Send message')
         answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
@@ -95,7 +95,7 @@ class JsonStatham(unittest.TestCase):
                          'А ты точно продюсер?', 'С меня поцелуй в щёчку', 'Век тебя не забуду... Ладно, шучу, забуду!'])
 
         while True:
-            message = self.vk.messages.get(count=1, bool=0, offset=0)['items'][0]
+            message = self.vk.messages.getHistory(count=1, offset=0, peer_id=2000000004)['items'][0]
             if message['id'] != last_message_id:
                 self.vk.messages.send(chat_id=4, message=answer)
                 break
@@ -208,6 +208,11 @@ class JsonStatham(unittest.TestCase):
 
         for i in friends + [person['id']]:
             like_last_post(i)
+
+        song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку ')['items'][0]
+
+        self.vk.wall.post(owner_id=person['id'], from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
+                                                                                               song['id']))
 
         print(person['id'], end='|', file=self.db)
 
