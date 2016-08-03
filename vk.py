@@ -7,153 +7,210 @@ import multiprocessing as mp
 import cpt
 from time import sleep
 
+import unittest
+import sys
+
+import logging.config
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('main')
+
+
+def excepthook(*args):
+    logger.error('Uncaught exception:', exc_info=args)
 
 """
 Примеры можно посмотреть здесь: https://github.com/python273/vk_api/tree/master/examples
 VK API - здесь: https://new.vk.com/dev.php?method=methods
 """
 
+class JsonStatham(unittest.TestCase):
 
-login, password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
+    def setUp(self):
 
-db = open('db.log', 'a+')
-log = open('log.log', 'a')
+        self.err = None
 
-tmp = ''
-for i in db:
-    tmp += i
+        self.login, self.password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
+    
+        self.db = open('db.log', 'a+')
+        # self.log = open('log.log', 'a')
 
-people_in_db = tmp.rsplit('|')
+        tmp = ''
+        for i in self.db:
+            tmp += i
+        self.people_in_db = tmp.rsplit('|')
 
-def captcha_handler(captcha):
+        logger.debug('####################> Start %s' % self._testMethodName)
+        self.vk_session = vk_api.VkApi(self.login, self.password, api_version='5.53', captcha_handler=self.captcha_handler)
 
-    print(u'         Словил каптчу'.encode('utf-8'), file=log)
-    url = captcha.get_url()
-    cpt.captcha_save(url)
-    # key = input("Enter Captcha {0}: ".format(url)).strip()
+        try:
+            self.vk_session.authorization()
+        except vk_api.AuthorizationError as error_msg:
+            logger.debug(error_msg)
+            self.err = error_msg
+            raise Exception(error_msg)
 
-    ask_for_help = choice(['Взломайте каптчу, плиз', 'Тут это... ваша помощь нужна', 'Взломайте, только побыстрее',
-                           'Докажите, что вы лучше китайцев', 'А это смогёшь взломать?', 'Коооооооооть', 'Ну пазязя',
-                           'Без тебя никак не обойтись', 'Купи слона',
-                           'Эй, ребят, хватит трахаться, помогите взломать каптчу', 'Потом ипацца будите! Долг зовет!'])
+        self.vk = self.vk_session.get_api()
 
-    vk.messages.send(chat_id=4, message=ask_for_help)
-    vk.messages.send(chat_id=4, message=url.replace('api.', ''))
-    last_message_id = vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
-    print(u'         Отправил сообщенько'.encode('utf-8'), file=log)
-
-    answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
-                     'Почему так долго? Лучше бы у китайцев попросил!', 'Не дано тебе разгадывать каптчи',
-                     'А ты точно продюсер?', 'С меня поцелуй в щёчку', 'Век тебя не забуду... Ладно, шучу, забуду!'])
-
-    while True:
-        message = vk.messages.get(count=1, bool=0, offset=0)['items'][0]
-        if message['id'] != last_message_id:
-            vk.messages.send(chat_id=4, message=answer)
-            break
+    def tearDown(self):
+        if sys.exc_info()[0] is not None or self.err is not None:
+            logger.debug('EXCEPTION INFO : [{}]'.format(sys.exc_info()[0] if sys.exc_info()[0] else self.err))
+            logger.debug('[FAILED] [%s]' % self._testMethodName)
+            self.vk.messages.send(chat_id=4, message='Ошибка: {}'.format(sys.exc_info()[0] if sys.exc_info()[0]
+                                                                         else self.err))
         else:
-            sleep(10)
 
-    key = message['body']
-    print(u'         Получил такой ключ: {}'.format(key).encode('utf-8'), file=log)
-    return captcha.try_again(key)
+            logger.debug('Zatralleno')
+            logger.debug('[PASSED] [%s]' % self._testMethodName)
+            logger.debug('#################### End %s' % self._testMethodName)
+            self.vk.messages.send(chat_id=4, message='Затраллено')
 
+        # print('Затраллено', file=self.log)
 
-vk_session = vk_api.VkApi(login, password, api_version='5.53', captcha_handler=captcha_handler)
-
-try:
-    vk_session.authorization()
-except vk_api.AuthorizationError as error_msg:
-    print(error_msg)
-
-
-vk = vk_session.get_api()
-
-while True:
-    persons = vk.users.search(count=1000, country=3, city=282, sex=1, status=6, age_from=18, age_to=25,
-                             online=1, has_photo=1)
-    try:
-        count = persons['count'] - 1
-        person = persons['items'][randint(0, count)]
-    except IndexError:
-        continue
-    if person['id'] not in people_in_db:
-        print(str(person['id']).encode('utf-8'), end='|', file=db)
-        vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
-        print(u'Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']).encode('utf-8'), file=log)
-        break
-
-with vk_api.VkRequestsPool(vk_session) as pool:
-    # noinspection PyUnboundLocalVariable
-    person_friends = pool.method_one_param('friends.get', key='user_id', values=[person['id']])
-
-friends = list(set().union(*(i['items'] for i in person_friends.values())))
-print(u'    Количество друганов: {}'.format(len(friends)).encode('utf-8'), file=log)
-
-with vk_api.VkRequestsPool(vk_session) as pool:
-    # noinspection PyUnboundLocalVariable
-    person_photos = pool.method('photos.getAll', {'owner_id': person['id'], 'photo_sizes': 0, 'no_service_albums': 0,
-                                'need_hidden': 0, 'skip_hidden': 0, 'count': 200})
-
-
-person_photos = person_photos['items']
-
-print(u'    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)).encode('utf-8'), file=log)
-
-pool = ThreadPool(mp.cpu_count())
-person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
-pool.close()
-pool.join()
-
-def photo_for_log(owner_id, photo_id):
-    photo = vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id))[0]
-    max_sixe = max([int(i[6:]) for i in photo if 'photo_' in i])
-    return photo['photo_{}'.format(max_sixe)]
+        self.db.close()
+        # self.log.close()
 
 
 
-def like_last_post(owner_id):
-    try:
-        post = vk.wall.get(owner_id=owner_id, count=1)['items']
-        if post:
-            post_id = post[0]['id']
-            if not vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
-                vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
-                print(u'        Поставил лайк юзеру {}'.format(owner_id).encode('utf-8'), file=log)
-        else:
-            print(u'        Нет записей у юзера {}'.format(owner_id).encode('utf-8'), file=log)
-    except:
-        print(u'        Юзер удалён'.encode('utf-8'), owner_id, file=log)
+    def captcha_handler(self, captcha):
 
-def like_all_photos(owner_id, photo_id):
-    if not vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
-        vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
-        print(u'        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
-                                                           photo_for_log(owner_id, photo_id)).encode('utf-8'), file=log)
+        # print('         Словил каптчу', file=self.log)
+        logger.debug('Caught captcha')
+        url = captcha.get_url()
+        cpt.captcha_save(url)
+        # key = input("Enter Captcha {0}: ".format(url)).strip()
 
+        ask_for_help = choice(['Взломайте каптчу, плиз', 'Тут это... ваша помощь нужна', 'Взломайте, только побыстрее',
+                               'Докажите, что вы лучше китайцев', 'А это смогёшь взломать?', 'Коооооооооть', 'Ну пазязя',
+                               'Без тебя никак не обойтись', 'Купи слона',
+                               'Эй, ребят, хватит трахаться, помогите взломать каптчу', 'Потом ипацца будите! Долг зовет!'])
 
-shuffle(friends)
+        self.vk.messages.send(chat_id=4, message=ask_for_help)
+        self.vk.messages.send(chat_id=4, message=url.replace('api.', ''))
+        last_message_id = self.vk.messages.get(count=1, bool=0, offset=0)['items'][0]['id']
+        # print('         Отправил сообщенько', file=self.log)
+        logger.debug('Send message')
+        answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
+                         'Почему так долго? Лучше бы у китайцев попросил!', 'Не дано тебе разгадывать каптчи',
+                         'А ты точно продюсер?', 'С меня поцелуй в щёчку', 'Век тебя не забуду... Ладно, шучу, забуду!'])
 
-# pool = ThreadPool(mp.cpu_count())
-# pool.map(like_last_post, friends)
-# pool.close()
-# pool.join()
+        while True:
+            message = self.vk.messages.get(count=1, bool=0, offset=0)['items'][0]
+            if message['id'] != last_message_id:
+                self.vk.messages.send(chat_id=4, message=answer)
+                break
+            else:
+                sleep(10)
 
-vk.messages.send(chat_id=4, message='Начал лайкать фотки')
-print(u'    Начал лайкать фотки'.encode('utf-8'), file=log)
-
-for i in person_photos_ids:
-    like_all_photos(person['id'], i)
-
-vk.messages.send(chat_id=4, message='Начал лайкать посты')
-print(u'    Начал лайкать посты'.encode('utf-8'), file=log)
-
-for i in friends + [person['id']]:
-    like_last_post(i)
+        key = message['body']
+        logger.debug('Get key: {}'.format(key))
+        # print('         Получил такой ключ: {}'.format(key), file=self.log)
+        return captcha.try_again(key)
 
 
-vk.messages.send(chat_id=4, message='Затраллено')
-print(u'Затраллено'.encode('utf-8'), file=log)
+    def test_1_like_photos_and_posts(self):
 
-db.close()
-log.close()
+        while True:
+            persons = self.vk.users.search(count=1000, country=3, city=282, sex=1, status=6, age_from=18, age_to=25,
+                                     online=1, has_photo=1)
+            try:
+                count = persons['count'] - 1
+                person = persons['items'][randint(0, count)]
+            except IndexError:
+                continue
+            if person['id'] not in self.people_in_db:
+                self.vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
+                logger.debug("Now I'm going to tralling lalka: {}".format(person['id']))
+                # print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=self.log)
+                break
+
+        with vk_api.VkRequestsPool(self.vk_session) as pool:
+            # noinspection PyUnboundLocalVariable
+            person_friends = pool.method_one_param('friends.get', key='user_id', values=[person['id']])
+
+        friends = list(set().union(*(i['items'] for i in person_friends.values())))
+        logger.debug('Number of friends: {}'.format(len(friends)))
+        # print('    Количество друганов: {}'.format(len(friends)), file=self.log)
+
+        with vk_api.VkRequestsPool(self.vk_session) as pool:
+            # noinspection PyUnboundLocalVariable
+            person_photos = pool.method('photos.getAll', {'owner_id': person['id'], 'photo_sizes': 0, 'no_service_albums': 0,
+                                        'need_hidden': 0, 'skip_hidden': 0, 'count': 200})
+
+
+        person_photos = person_photos['items']
+
+        logger.debug('Number of photos: {}'.format(len(person_photos)))
+        # print('    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)), file=self.log)
+
+        pool = ThreadPool(mp.cpu_count())
+        person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
+        pool.close()
+        pool.join()
+
+        def photo_for_log(owner_id, photo_id):
+            photo = self.vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id))[0]
+            max_sixe = max([int(i[6:]) for i in photo if 'photo_' in i])
+            return photo['photo_{}'.format(max_sixe)]
+
+
+
+        def like_last_post(owner_id):
+            try:
+                post = self.vk.wall.get(owner_id=owner_id, count=1)['items']
+                if post:
+                    post_id = post[0]['id']
+                    if not self.vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
+                        self.vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
+                        logger.debug('Like post of user: {}'.format(owner_id))
+                        # print('        Поставил лайк юзеру {}'.format(owner_id), file=self.log)
+                else:
+                    logger.debug('User does not have posts: {}'.format(owner_id))
+                    # print('        Нет записей у юзера {}'.format(owner_id), file=self.log)
+            except:
+                logger.debug('User is deleted: {}'.format(owner_id))
+                # print('        Юзер удалён', owner_id, file=self.log)
+
+        def like_all_photos(owner_id, photo_id):
+            try:
+                if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
+                    self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
+                    logger.debug('Like photo: {}'.format(owner_id, photo_for_log(owner_id, photo_id)))
+                    # print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
+                    #                                                    photo_for_log(owner_id, photo_id)), file=self.log)
+
+            except vk_api.vk_api.ApiError as error_msg:
+                logger.debug(error_msg)
+                self.err = error_msg
+                raise Exception(error_msg)
+
+
+        shuffle(friends)
+
+        # pool = ThreadPool(mp.cpu_count())
+        # pool.map(like_last_post, friends)
+        # pool.close()
+        # pool.join()
+
+        self.vk.messages.send(chat_id=4, message='Начал лайкать фотки')
+        logger.debug('Starting liking photos')
+        # print('    Начал лайкать фотки', file=self.log)
+
+
+        for i in person_photos_ids:
+            like_all_photos(person['id'], i)
+
+
+
+        self.vk.messages.send(chat_id=4, message='Начал лайкать посты')
+        logger.debug('Starting liking posts')
+        # print('    Начал лайкать посты', file=self.log)
+
+        for i in friends + [person['id']]:
+            like_last_post(i)
+
+        print(person['id'], end='|', file=self.db)
+
+if __name__ == "__main__":
+    sys.excepthook = excepthook
+    unittest.main(failfast=True)
