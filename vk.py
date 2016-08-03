@@ -175,7 +175,7 @@ class JsonStatham(unittest.TestCase):
             try:
                 if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
                     self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
-                    logger.debug('Like photo: {}'.format(owner_id, photo_for_log(owner_id, photo_id)))
+                    logger.debug('Like photo: {}'.format(photo_for_log(owner_id, photo_id)))
                     # print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
                     #                                                    photo_for_log(owner_id, photo_id)), file=self.log)
 
