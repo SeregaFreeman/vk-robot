@@ -3,7 +3,7 @@
 import vk_api
 from random import shuffle, choice, randint
 from multiprocessing.dummy import Pool as ThreadPool
-import multiprocessing as mp
+from multiprocessing import cpu_count
 import cpt
 from time import sleep
 
@@ -143,7 +143,7 @@ class JsonStatham(unittest.TestCase):
         logger.debug('Number of photos: {}'.format(len(person_photos)))
         # print('    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)), file=self.log)
 
-        pool = ThreadPool(mp.cpu_count())
+        pool = ThreadPool(cpu_count())
         person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
         pool.close()
         pool.join()
@@ -187,7 +187,7 @@ class JsonStatham(unittest.TestCase):
 
         shuffle(friends)
 
-        # pool = ThreadPool(mp.cpu_count())
+        # pool = ThreadPool(cpu_count())
         # pool.map(like_last_post, friends)
         # pool.close()
         # pool.join()
@@ -209,7 +209,7 @@ class JsonStatham(unittest.TestCase):
         for i in friends + [person['id']]:
             like_last_post(i)
 
-        song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку ')['items'][0]
+        song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку')['items'][0]
 
         self.vk.wall.post(owner_id=person['id'], from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
                                                                                                song['id']))
