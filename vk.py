@@ -120,7 +120,7 @@ class JsonStatham(unittest.TestCase):
                 continue
             if person['id'] not in self.people_in_db:
                 self.vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
-                logger.debug("Now I'm going to tralling lalka: {}".format(person['id']))
+                logger.debug("Now I'm going to tralling lalka: https://vk.com/id{}".format(person['id']))
                 # print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=self.log)
                 break
 
