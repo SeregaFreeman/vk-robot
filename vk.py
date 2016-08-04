@@ -211,8 +211,19 @@ class JsonStatham(unittest.TestCase):
 
         song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку')['items'][0]
 
-        self.vk.wall.post(owner_id=person['id'], from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
-                                                                                               song['id']))
+        try:
+            self.vk.wall.post(owner_id=person['id'], from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
+                                                                                                   song['id']))
+        except:
+            logger.debug("Can't post song on the wall. Try to send message with song")
+            self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую тправить песню сообщением')
+            try:
+                self.vk.messages.send(user_id=person['id'], attachments='audio{}_{}'.format(song['owner_id'],
+                                                                                            song['id']))
+            except:
+                logger.debug("Can't send message with song. Sorry!")
+                self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
+                                                         ' я не могу отправить')
 
         print(person['id'], end='|', file=self.db)
 
