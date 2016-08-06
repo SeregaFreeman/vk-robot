@@ -32,7 +32,7 @@ class JsonStatham(unittest.TestCase):
 
         self.login, self.password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
     
-        self.db = open('db.log', 'a+')
+        self.db = open('db.txt', 'a+')
         # self.log = open('log.log', 'a')
 
         tmp = ''
