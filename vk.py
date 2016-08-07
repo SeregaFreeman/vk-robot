@@ -216,9 +216,9 @@ class JsonStatham(unittest.TestCase):
                                                                                                    song['id']))
         except:
             logger.debug("Can't post song on the wall. Try to send message with song")
-            self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую тправить песню сообщением')
+            self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую отправить песню сообщением')
             try:
-                self.vk.messages.send(user_id=person['id'], attachments='audio{}_{}'.format(song['owner_id'],
+                self.vk.messages.send(user_id=person['id'], attachment='audio{}_{}'.format(song['owner_id'],
                                                                                             song['id']))
             except:
                 logger.debug("Can't send message with song. Sorry!")
