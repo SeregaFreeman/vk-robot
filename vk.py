@@ -168,7 +168,11 @@ class JsonStatham(unittest.TestCase):
                     logger.debug('User does not have posts: {}'.format(owner_id))
                     # print('        Нет записей у юзера {}'.format(owner_id), file=self.log)
             except:
-                logger.debug('User is deleted: {}'.format(owner_id))
+                if 'Flood' in sys.exc_info():
+                    self.vk.messages.send(chat_id=4, message='Словил Flood. Попробую отправить пиздатую песню')
+                    raise StopIteration
+                else:
+                    logger.debug('User is deleted: {}'.format(owner_id))
                 # print('        Юзер удалён', owner_id, file=self.log)
 
         def like_all_photos(owner_id, photo_id):
@@ -206,8 +210,11 @@ class JsonStatham(unittest.TestCase):
         logger.debug('Starting liking posts')
         # print('    Начал лайкать посты', file=self.log)
 
-        for i in friends + [person['id']]:
-            like_last_post(i)
+        for i in [person['id']] + friends:
+            try:
+                like_last_post(i)
+            except StopIteration:
+                break
 
         song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку')['items'][0]
 
