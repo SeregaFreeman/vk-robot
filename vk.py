@@ -28,12 +28,9 @@ class JsonStatham(unittest.TestCase):
 
     def setUp(self):
 
-        self.err = None
-
         self.login, self.password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
     
         self.db = open('db.txt', 'a+')
-        # self.log = open('log.log', 'a')
 
         tmp = ''
         for i in self.db:
@@ -53,28 +50,29 @@ class JsonStatham(unittest.TestCase):
         self.vk = self.vk_session.get_api()
 
     def tearDown(self):
-        if sys.exc_info()[0] is not None or self.err is not None:
-            logger.debug('EXCEPTION INFO : [{}]'.format(sys.exc_info()[0] if sys.exc_info()[0] else self.err))
-            logger.debug('[FAILED] [%s]' % self._testMethodName)
-            self.vk.messages.send(chat_id=4, message='Ошибка: {}'.format(sys.exc_info()[0] if sys.exc_info()[0]
-                                                                         else self.err))
-        else:
+        
+        self.db.close()
 
-            logger.debug('Zatralleno')
+    def run(self, result=None):
+
+        unittest.TestCase.run(self, result)  # call superclass run method
+        fail_method = [x[1].split('\n')[-2] for x in result.failures]
+        error_method = [x[1].split('\n')[-2] for x in result.errors]
+        print(error_method)
+        if self._testMethodName in str(result.failures):
+            logger.debug('EXCEPTION INFO : [{}]'.format(fail_method[-1]))
+            logger.debug('[FAILED] [%s]' % self._testMethodName)
+            self.vk.messages.send(chat_id=4, message='Ошибка: [{}]'.format(fail_method[-1]))
+        elif self._testMethodName in str(result.errors):
+            logger.debug('ERROR INFO : [{}]'.format(error_method[-1]))
+            logger.debug('[ERROR] [%s]' % self._testMethodName)
+            self.vk.messages.send(chat_id=4, message='Ошибка: {}'.format(error_method[-1]))
+        else:
             logger.debug('[PASSED] [%s]' % self._testMethodName)
-            logger.debug('#################### End %s' % self._testMethodName)
+            logger.debug('Zatralleno')
             self.vk.messages.send(chat_id=4, message='Затраллено')
 
-        # print('Затраллено', file=self.log)
-
-        self.db.close()
-        # self.log.close()
-
-
-
     def captcha_handler(self, captcha):
-
-        # print('         Словил каптчу', file=self.log)
         logger.debug('Caught captcha')
         url = captcha.get_url()
         cpt.captcha_save(url)
@@ -88,7 +86,6 @@ class JsonStatham(unittest.TestCase):
         self.vk.messages.send(chat_id=4, message=ask_for_help)
         self.vk.messages.send(chat_id=4, message=url.replace('api.', ''))
         last_message_id = self.vk.messages.getHistory(count=1, offset=0, peer_id=2000000004)['items'][0]['id']
-        # print('         Отправил сообщенько', file=self.log)
         logger.debug('Send message')
         answer = choice(['Спасибо, бро', 'Да пребудет с тобой сила', 'А она точно правильная?', 'Жизнь за Нерзула',
                          'Почему так долго? Лучше бы у китайцев попросил!', 'Не дано тебе разгадывать каптчи',
@@ -104,7 +101,6 @@ class JsonStatham(unittest.TestCase):
 
         key = message['body']
         logger.debug('Get key: {}'.format(key))
-        # print('         Получил такой ключ: {}'.format(key), file=self.log)
         return captcha.try_again(key)
 
 
@@ -119,9 +115,9 @@ class JsonStatham(unittest.TestCase):
             except IndexError:
                 continue
             if person['id'] not in self.people_in_db:
-                self.vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']))
+                self.vk.messages.send(chat_id=4, message='Сейчас буду траллить лалку: https://vk.com/id{}'
+                                      .format(person['id']))
                 logger.debug("Now I'm going to tralling lalka: https://vk.com/id{}".format(person['id']))
-                # print('Сейчас буду траллить лалку: https://vk.com/id{}'.format(person['id']), file=self.log)
                 break
 
         with vk_api.VkRequestsPool(self.vk_session) as pool:
@@ -130,7 +126,6 @@ class JsonStatham(unittest.TestCase):
 
         friends = list(set().union(*(i['items'] for i in person_friends.values())))
         logger.debug('Number of friends: {}'.format(len(friends)))
-        # print('    Количество друганов: {}'.format(len(friends)), file=self.log)
 
         with vk_api.VkRequestsPool(self.vk_session) as pool:
             # noinspection PyUnboundLocalVariable
@@ -141,7 +136,6 @@ class JsonStatham(unittest.TestCase):
         person_photos = person_photos['items']
 
         logger.debug('Number of photos: {}'.format(len(person_photos)))
-        # print('    Количество фоток, которые я пролайкаю: {}'.format(len(person_photos)), file=self.log)
 
         pool = ThreadPool(cpu_count())
         person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
@@ -153,8 +147,6 @@ class JsonStatham(unittest.TestCase):
             max_sixe = max([int(i[6:]) for i in photo if 'photo_' in i])
             return photo['photo_{}'.format(max_sixe)]
 
-
-
         def like_last_post(owner_id):
             try:
                 post = self.vk.wall.get(owner_id=owner_id, count=1)['items']
@@ -162,31 +154,28 @@ class JsonStatham(unittest.TestCase):
                     post_id = post[0]['id']
                     if not self.vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
                         self.vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
-                        logger.debug('Like post of user: {}'.format(owner_id))
-                        # print('        Поставил лайк юзеру {}'.format(owner_id), file=self.log)
+                        logger.debug('Like post of user: https://vk.com/id{}'.format(owner_id))
                 else:
-                    logger.debug('User does not have posts: {}'.format(owner_id))
-                    # print('        Нет записей у юзера {}'.format(owner_id), file=self.log)
+                    logger.debug('User does not have posts: https://vk.com/id{}'.format(owner_id))
             except:
                 if 'Flood' in sys.exc_info():
                     self.vk.messages.send(chat_id=4, message='Словил Flood. Попробую отправить пиздатую песню')
                     raise StopIteration
                 else:
-                    logger.debug('User is deleted: {}'.format(owner_id))
-                # print('        Юзер удалён', owner_id, file=self.log)
+                    logger.debug('User is deleted: https://vk.com/id{}'.format(owner_id))
 
         def like_all_photos(owner_id, photo_id):
-            try:
-                if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
-                    self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
-                    logger.debug('Like photo: {}'.format(photo_for_log(owner_id, photo_id)))
-                    # print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
-                    #                                                    photo_for_log(owner_id, photo_id)), file=self.log)
+            # try:
+            if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
+                self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
+                logger.debug('Like photo: {}'.format(photo_for_log(owner_id, photo_id)))
+                # print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
+                #                                                    photo_for_log(owner_id, photo_id)), file=self.log)
 
-            except vk_api.vk_api.ApiError as error_msg:
-                logger.debug(error_msg)
-                self.err = error_msg
-                raise Exception(error_msg)
+            # except vk_api.vk_api.ApiError as error_msg:
+            #     logger.debug(error_msg)
+            #     self.err = error_msg
+            #     raise Exception(error_msg)
 
 
         shuffle(friends)
@@ -198,17 +187,12 @@ class JsonStatham(unittest.TestCase):
 
         self.vk.messages.send(chat_id=4, message='Начал лайкать фотки')
         logger.debug('Starting liking photos')
-        # print('    Начал лайкать фотки', file=self.log)
-
 
         for i in person_photos_ids:
             like_all_photos(person['id'], i)
 
-
-
         self.vk.messages.send(chat_id=4, message='Начал лайкать посты')
         logger.debug('Starting liking posts')
-        # print('    Начал лайкать посты', file=self.log)
 
         for i in [person['id']] + friends:
             try:
