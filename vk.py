@@ -165,18 +165,9 @@ class JsonStatham(unittest.TestCase):
                     logger.debug('User is deleted: https://vk.com/id{}'.format(owner_id))
 
         def like_all_photos(owner_id, photo_id):
-            # try:
             if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
                 self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
                 logger.debug('Like photo: {}'.format(photo_for_log(owner_id, photo_id)))
-                # print('        Поставил лайк юзеру {}, на фотку {}'.format(owner_id,
-                #                                                    photo_for_log(owner_id, photo_id)), file=self.log)
-
-            # except vk_api.vk_api.ApiError as error_msg:
-            #     logger.debug(error_msg)
-            #     self.err = error_msg
-            #     raise Exception(error_msg)
-
 
         shuffle(friends)
 
