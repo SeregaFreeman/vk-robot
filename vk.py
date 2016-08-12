@@ -58,7 +58,6 @@ class JsonStatham(unittest.TestCase):
         unittest.TestCase.run(self, result)  # call superclass run method
         fail_method = [x[1].split('\n')[-2] for x in result.failures]
         error_method = [x[1].split('\n')[-2] for x in result.errors]
-        print(error_method)
         if self._testMethodName in str(result.failures):
             logger.debug('EXCEPTION INFO : [{}]'.format(fail_method[-1]))
             logger.debug('[FAILED] [%s]' % self._testMethodName)
@@ -97,11 +96,58 @@ class JsonStatham(unittest.TestCase):
                 self.vk.messages.send(chat_id=4, message=answer)
                 break
             else:
-                sleep(10)
+                sleep(5)
 
         key = message['body']
         logger.debug('Get key: {}'.format(key))
         return captcha.try_again(key)
+
+    def like_last_post(self, owner_id):
+        try:
+            post = self.vk.wall.get(owner_id=owner_id, count=1)['items']
+            if post:
+                post_id = post[0]['id']
+                if not self.vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
+                    self.vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
+                    logger.debug('Like post of user: https://vk.com/id{}'.format(owner_id))
+            else:
+                logger.debug('User does not have posts: https://vk.com/id{}'.format(owner_id))
+        except:
+            if 'Flood' in sys.exc_info():
+                self.vk.messages.send(chat_id=4, message='Словил Flood. Попробую отправить пиздатую песню')
+                raise StopIteration
+            else:
+                logger.debug('User is deleted: https://vk.com/id{}'.format(owner_id))
+
+    def photo_for_log(self, owner_id, photo_id):
+        photo = self.vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id))[0]
+        max_size = max([int(i[6:]) for i in photo if 'photo_' in i])
+        return photo['photo_{}'.format(max_size)]
+
+    def like_all_photos(self, owner_id, photo_id):
+        if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
+            self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
+            logger.debug('Like photo: {}'.format(self.photo_for_log(owner_id, photo_id)))
+
+
+    def send_song(self, person_id, song_name='Herr Антон – Одинокий мужчина в самом соку', message=''):
+        song = self.vk.audio.search(q=song_name)['items'][0]
+
+        try:
+            self.vk.wall.post(owner_id=person_id, from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
+                                                                                                   song['id']))
+            if message:
+                self.vk.messages.send(user_id=person_id, message=message, sticker_id=21)
+        except:
+            logger.debug("Can't post song on the wall. Try to send message with song")
+            self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую отправить песню сообщением')
+            try:
+                self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']),
+                                      message=message, sticker_id=21)
+            except:
+                logger.debug("Can't send message with song. Sorry!")
+                self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
+                                                         ' я не могу отправить')
 
 
     def test_1_like_photos_and_posts(self):
@@ -126,6 +172,7 @@ class JsonStatham(unittest.TestCase):
 
         friends = list(set().union(*(i['items'] for i in person_friends.values())))
         logger.debug('Number of friends: {}'.format(len(friends)))
+        shuffle(friends)
 
         with vk_api.VkRequestsPool(self.vk_session) as pool:
             # noinspection PyUnboundLocalVariable
@@ -142,35 +189,6 @@ class JsonStatham(unittest.TestCase):
         pool.close()
         pool.join()
 
-        def photo_for_log(owner_id, photo_id):
-            photo = self.vk.photos.getById(photos='{}_{}'.format(owner_id, photo_id))[0]
-            max_sixe = max([int(i[6:]) for i in photo if 'photo_' in i])
-            return photo['photo_{}'.format(max_sixe)]
-
-        def like_last_post(owner_id):
-            try:
-                post = self.vk.wall.get(owner_id=owner_id, count=1)['items']
-                if post:
-                    post_id = post[0]['id']
-                    if not self.vk.likes.isLiked(owner_id=owner_id, item_id=post_id, type='post')['liked']:
-                        self.vk.likes.add(owner_id=owner_id, item_id=post_id, type='post')
-                        logger.debug('Like post of user: https://vk.com/id{}'.format(owner_id))
-                else:
-                    logger.debug('User does not have posts: https://vk.com/id{}'.format(owner_id))
-            except:
-                if 'Flood' in sys.exc_info():
-                    self.vk.messages.send(chat_id=4, message='Словил Flood. Попробую отправить пиздатую песню')
-                    raise StopIteration
-                else:
-                    logger.debug('User is deleted: https://vk.com/id{}'.format(owner_id))
-
-        def like_all_photos(owner_id, photo_id):
-            if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
-                self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
-                logger.debug('Like photo: {}'.format(photo_for_log(owner_id, photo_id)))
-
-        shuffle(friends)
-
         # pool = ThreadPool(cpu_count())
         # pool.map(like_last_post, friends)
         # pool.close()
@@ -180,34 +198,74 @@ class JsonStatham(unittest.TestCase):
         logger.debug('Starting liking photos')
 
         for i in person_photos_ids:
-            like_all_photos(person['id'], i)
+            self.like_all_photos(person['id'], i)
 
         self.vk.messages.send(chat_id=4, message='Начал лайкать посты')
         logger.debug('Starting liking posts')
 
         for i in [person['id']] + friends:
             try:
-                like_last_post(i)
+                self.like_last_post(i)
             except StopIteration:
                 break
 
-        song = self.vk.audio.search(q='Herr Антон – Одинокий мужчина в самом соку')['items'][0]
-
-        try:
-            self.vk.wall.post(owner_id=person['id'], from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
-                                                                                                   song['id']))
-        except:
-            logger.debug("Can't post song on the wall. Try to send message with song")
-            self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую отправить песню сообщением')
-            try:
-                self.vk.messages.send(user_id=person['id'], attachment='audio{}_{}'.format(song['owner_id'],
-                                                                                            song['id']))
-            except:
-                logger.debug("Can't send message with song. Sorry!")
-                self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
-                                                         ' я не могу отправить')
+        self.send_song(person['id'])
 
         print(person['id'], end='|', file=self.db)
+
+    def test_2_like_for_like(self):
+
+        notifications = self.vk.notifications.get(filters='likes')['items']
+
+        if notifications:
+            persons = [self.vk.users.get(user_ids=notification['feedback']['items'][0]['from_id'], fields='sex')[0]
+                       for notification in notifications
+                       if self.vk.users.get(user_ids=notification['feedback']['items'][0]['from_id'],
+                                            fields='sex')[0]['sex'] == 1]
+
+            for per in persons:
+                if per['id'] not in self.people_in_db:
+                    person = per
+                    self.vk.messages.send(chat_id=4, message='Лайк за лайк лалке: https://vk.com/id{}'
+                                          .format(person['id']))
+                    logger.debug("Like for like for lalka: https://vk.com/id{}".format(person['id']))
+                    break
+            else:
+                person = None
+                self.vk.messages.send(chat_id=4, message='Всле лалки заттраленны')
+                logger.debug('All lalks were tralled')
+
+            if person:
+
+                with vk_api.VkRequestsPool(self.vk_session) as pool:
+                    # noinspection PyUnboundLocalVariable
+                    person_photos = pool.method('photos.getAll',
+                                                {'owner_id': person['id'], 'photo_sizes': 0, 'no_service_albums': 0,
+                                                 'need_hidden': 0, 'skip_hidden': 0, 'count': 200})
+
+                person_photos = person_photos['items']
+
+                logger.debug('Number of photos: {}'.format(len(person_photos)))
+
+                pool = ThreadPool(cpu_count())
+                person_photos_ids = pool.map(lambda photo: photo['id'], person_photos)
+                pool.close()
+                pool.join()
+
+                self.vk.messages.send(chat_id=4, message='Начал лайкать фотки')
+                logger.debug('Starting liking photos')
+
+                for i in person_photos_ids:
+                    self.like_all_photos(person['id'], i)
+
+                self.send_song(person['id'], message='Приветик', song_name='Герр Антон (Herr Anton) – Лысый Бэби')
+
+                print(person['id'], end='|', file=self.db)
+
+        else:
+            logger.debug('No new notifications')
+            self.vk.messages.send(chat_id=4, message='Нет новых уведомлений')
+
 
 if __name__ == "__main__":
     sys.excepthook = excepthook
