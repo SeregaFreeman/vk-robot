@@ -29,7 +29,7 @@ class JsonStatham(unittest.TestCase):
     def setUp(self):
 
         self.login, self.password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
-    
+
         self.db = open('db.txt', 'a+')
 
         tmp = ''
@@ -50,7 +50,7 @@ class JsonStatham(unittest.TestCase):
         self.vk = self.vk_session.get_api()
 
     def tearDown(self):
-        
+
         self.db.close()
         logger.debug('####################>  End  %s' % self._testMethodName)
 
@@ -138,14 +138,17 @@ class JsonStatham(unittest.TestCase):
             self.vk.wall.post(owner_id=person_id, from_group=0, attachments='audio{}_{}'.format(song['owner_id'],
                                                                                                    song['id']))
             if message:
-                self.vk.messages.send(user_id=person_id, message=message, sticker_id=21)
+                try:
+                    self.vk.messages.send(user_id=person_id, message=message, sticker_id=21)
+                except:
+                    logger.debug("Post song on the wall. But can't send a message.")
+                    self.vk.messages.send(chat_id=4, message='Кинул песню на стенку. Но не могу отправить сообщение')
         except:
             logger.debug("Can't post song on the wall. Try to send message with song")
             self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую отправить песню сообщением')
             try:
-                self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']))
-                if message:
-                    self.vk.messages.send(user_id=person_id, message=message, sticker_id=21)
+                self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']),
+                                      message=message, sticker_id=21)
             except:
                 logger.debug("Can't send message with song. Sorry!")
                 self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
