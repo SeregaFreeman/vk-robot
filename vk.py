@@ -52,6 +52,7 @@ class JsonStatham(unittest.TestCase):
     def tearDown(self):
         
         self.db.close()
+        logger.debug('####################>  End  %s' % self._testMethodName)
 
     def run(self, result=None):
 
@@ -269,4 +270,5 @@ class JsonStatham(unittest.TestCase):
 
 if __name__ == "__main__":
     sys.excepthook = excepthook
-    unittest.main(failfast=True)
+    with open('testing.out', 'a+') as file:
+        unittest.main(testRunner=unittest.TextTestRunner(file), failfast=True)
