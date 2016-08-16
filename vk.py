@@ -29,17 +29,18 @@ class JsonStatham(unittest.TestCase):
     def setUp(self):
 
         self.login, self.password = '+375292082080', '1J2345S6789o0Pacan123N45s6t7A8h9A0m'
-
-        self.db = open('db.txt', 'a+')
+        db = open('db.txt', 'a')
+        db.close()
+        self.db = open('db.txt', 'r+')
 
         tmp = ''
         for i in self.db:
             tmp += i
-        self.people_in_db = tmp.rsplit('|')
+        self.people_in_db = [int(i) for i in tmp.replace('\n', '').rsplit('|')[:-1]]
+
 
         logger.debug('####################> Start %s' % self._testMethodName)
         self.vk_session = vk_api.VkApi(self.login, self.password, api_version='5.53', captcha_handler=self.captcha_handler)
-
         try:
             self.vk_session.authorization()
         except vk_api.AuthorizationError as error_msg:
@@ -60,10 +61,12 @@ class JsonStatham(unittest.TestCase):
         fail_method = [x[1].split('\n')[-2] for x in result.failures]
         error_method = [x[1].split('\n')[-2] for x in result.errors]
         if self._testMethodName in str(result.failures):
+            print('@@@@@@@@@@@@@@@@@@', fail_method)
             logger.debug('EXCEPTION INFO : [{}]'.format(fail_method[-1]))
             logger.debug('[FAILED] [%s]' % self._testMethodName)
             self.vk.messages.send(chat_id=4, message='Ошибка: [{}]'.format(fail_method[-1]))
         elif self._testMethodName in str(result.errors):
+            print('@@@@@@@@@@@@@@@@@@', error_method)
             logger.debug('ERROR INFO : [{}]'.format(error_method[-1]))
             logger.debug('[ERROR] [%s]' % self._testMethodName)
             self.vk.messages.send(chat_id=4, message='Ошибка: {}'.format(error_method[-1]))
