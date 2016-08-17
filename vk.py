@@ -128,7 +128,7 @@ class JsonStatham(unittest.TestCase):
         max_size = max([int(i[6:]) for i in photo if 'photo_' in i])
         return photo['photo_{}'.format(max_size)]
 
-    def like_all_photos(self, owner_id, photo_id):
+    def like_photo(self, owner_id, photo_id):
         if not self.vk.likes.isLiked(owner_id=owner_id, item_id=photo_id, type='photo')['liked']:
             self.vk.likes.add(owner_id=owner_id, item_id=photo_id, type='photo')
             logger.debug('Like photo: {}'.format(self.photo_for_log(owner_id, photo_id)))
@@ -142,7 +142,10 @@ class JsonStatham(unittest.TestCase):
                                                                                                    song['id']))
             if message:
                 try:
-                    self.vk.messages.send(user_id=person_id, message=message, sticker_id=21)
+		    sleep(1)
+                    self.vk.messages.send(user_id=person_id, message=message)
+		    sleep(1)
+                    self.vk.messages.send(user_id=person_id, sticker_id=21)
                 except:
                     logger.debug("Post song on the wall. But can't send a message.")
                     self.vk.messages.send(chat_id=4, message='Кинул песню на стенку. Но не могу отправить сообщение')
@@ -150,8 +153,12 @@ class JsonStatham(unittest.TestCase):
             logger.debug("Can't post song on the wall. Try to send message with song")
             self.vk.messages.send(chat_id=4, message='Доступ к стене закрыт. Попробую отправить песню сообщением')
             try:
-                self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']),
-                                      message=message, sticker_id=21)
+                self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']))
+                if message:
+		    sleep(1)
+                    self.vk.messages.send(user_id=person_id, message=message)
+                    sleep(1)
+		    self.vk.messages.send(user_id=person_id, sticker_id=21)
             except:
                 logger.debug("Can't send message with song. Sorry!")
                 self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
@@ -206,7 +213,7 @@ class JsonStatham(unittest.TestCase):
         logger.debug('Starting liking photos')
 
         for i in person_photos_ids:
-            self.like_all_photos(person['id'], i)
+            self.like_photo(person['id'], i)
 
         self.vk.messages.send(chat_id=4, message='Начал лайкать посты')
         logger.debug('Starting liking posts')
@@ -264,7 +271,7 @@ class JsonStatham(unittest.TestCase):
                 logger.debug('Starting liking photos')
 
                 for i in person_photos_ids:
-                    self.like_all_photos(person['id'], i)
+                    self.like_photo(person['id'], i)
 
                 self.send_song(person['id'], message='Приветик', song_name='Герр Антон (Herr Anton) – Лысый Бэби')
 
