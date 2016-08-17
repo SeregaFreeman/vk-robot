@@ -142,9 +142,9 @@ class JsonStatham(unittest.TestCase):
                                                                                                    song['id']))
             if message:
                 try:
-		    sleep(1)
+                    sleep(1)
                     self.vk.messages.send(user_id=person_id, message=message)
-		    sleep(1)
+                    sleep(1)
                     self.vk.messages.send(user_id=person_id, sticker_id=21)
                 except:
                     logger.debug("Post song on the wall. But can't send a message.")
@@ -155,10 +155,10 @@ class JsonStatham(unittest.TestCase):
             try:
                 self.vk.messages.send(user_id=person_id, attachment='audio{}_{}'.format(song['owner_id'], song['id']))
                 if message:
-		    sleep(1)
+                    sleep(1)
                     self.vk.messages.send(user_id=person_id, message=message)
                     sleep(1)
-		    self.vk.messages.send(user_id=person_id, sticker_id=21)
+                self.vk.messages.send(user_id=person_id, sticker_id=21)
             except:
                 logger.debug("Can't send message with song. Sorry!")
                 self.vk.messages.send(chat_id=4, message='Соррьки, но и сообщение с крутым треком данному пользователю'
